@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Ball!</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            background-color: #87ceeb;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const basketWidth = 80;
+        const basketHeight = 20;
+        const itemRadius = 10;
+        const basketSpeed = 5;
+        let basketX = (canvas.width - basketWidth) / 2;
+        let item = null; // Only one item at a time
+        let score = 0;
+        let lives = 3;
+        let isGameOver = false;
+        let leftPressed = false;
+        let rightPressed = false;
+        let itemsCaught = 0; // Counter for caught items
+        let itemBaseSpeed = 2; // Starting speed for falling items
+
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+
+        function keyDownHandler(e) {
+            if (e.key === 'ArrowLeft') leftPressed = true;
+            if (e.key === 'ArrowRight') rightPressed = true;
+        }
+
+        function keyUpHandler(e) {
+            if (e.key === 'ArrowLeft') leftPressed = false;
+            if (e.key === 'ArrowRight') rightPressed = false;
+        }
+
+        function moveBasket() {
+            if (leftPressed && basketX > 0) {
+                basketX -= basketSpeed;
+            }
+            if (rightPressed && basketX < canvas.width - basketWidth) {
+                basketX += basketSpeed;
+            }
+        }
+
+        function createItem() {
+            // Only create a new item if there is no existing item
+            if (!item) {
+                const x = Math.random() * (canvas.width - itemRadius * 2) + itemRadius;
+                const y = -itemRadius;
+                const speed = itemBaseSpeed; // Use base speed for new items
+                item = { x, y, speed };
+            }
+        }
+
+        function drawBasket() {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(basketX, canvas.height - basketHeight, basketWidth, basketHeight);
+        }
+
+        function drawItem() {
+            if (item) {
+                ctx.fillStyle = '#ff6347';
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, itemRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        function updateItem() {
+            if (item) {
+                item.y += item.speed;
+                // Check if the item is caught by the basket
+                if (item.y + itemRadius > canvas.height - basketHeight &&
+                    item.x > basketX && item.x < basketX + basketWidth) {
+                    score++;
+                    itemsCaught++;
+                    item = null; // Remove the item after it is caught
+
+                    // Increase speed every 10 items caught
+                    if (itemsCaught % 10 === 0) {
+                        itemBaseSpeed += 1; // Increase base speed
+                    }
+                } else if (item.y > canvas.height) {
+                    // Item missed, remove it and lose a life
+                    item = null;
+                    lives--;
+                    if (lives === 0) isGameOver = true;
+                }
+            }
+        }
+
+        function drawScore() {
+            ctx.fillStyle = '#333';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+            ctx.fillText(`Lives: ${lives}`, canvas.width - 80, 20);
+        }
+
+        function drawGameOver() {
+            ctx.fillStyle = '#333';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+            ctx.font = '20px Arial';
+            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        function gameLoop() {
+            if (isGameOver) {
+                drawGameOver();
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            moveBasket();
+            drawBasket();
+            drawItem();
+            updateItem();
+            drawScore();
+
+            // Only create a new item when there isn't one already
+            createItem();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
