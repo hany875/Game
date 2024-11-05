@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shoot The Enemies!</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { background-color: #000; display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script type="text/javascript">
+  // Get the canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Game variables
+const player = { x: canvas.width / 2, y: canvas.height - 50, size: 20, color: 'white' };
+const projectiles = [];
+const enemies = [];
+let score = 0;
+let isGameOver = false;
+
+// Handle player movement
+document.addEventListener('mousemove', (event) => {
+  player.x = event.clientX;
+  player.y = event.clientY;
+});
+
+// Shooting function
+document.addEventListener('click', () => {
+  projectiles.push({ x: player.x, y: player.y, size: 5, color: 'yellow', speed: 5 });
+});
+
+// Enemy spawn function
+function spawnEnemy() {
+  const size = Math.random() * 30 + 20;
+  const x = Math.random() * canvas.width;
+  const y = -size;
+  const speed = Math.random() * 2 + 1;
+  enemies.push({ x, y, size, color: 'red', speed });
+}
+
+// Collision detection
+function isColliding(obj1, obj2) {
+  const dist = Math.hypot(obj1.x - obj2.x, obj1.y - obj2.y);
+  return dist < obj1.size + obj2.size;
+}
+
+// Game loop
+function gameLoop() {
+  if (isGameOver) {
+    ctx.font = '48px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText(`Game Over! Score: ${score}`, canvas.width / 2 - 150, canvas.height / 2);
+    return;
+  }
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw player
+  ctx.fillStyle = player.color;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Update and draw projectiles
+  projectiles.forEach((proj, projIndex) => {
+    proj.y -= proj.speed;
+    if (proj.y < 0) projectiles.splice(projIndex, 1); // Remove projectile if out of bounds
+    ctx.fillStyle = proj.color;
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Update and draw enemies
+  enemies.forEach((enemy, enemyIndex) => {
+    enemy.y += enemy.speed;
+    if (enemy.y - enemy.size > canvas.height) enemies.splice(enemyIndex, 1); // Remove enemy if out of bounds
+
+    // Check for collision with player
+    if (isColliding(player, enemy)) {
+      isGameOver = true;
+    }
+
+    // Draw enemy
+    ctx.fillStyle = enemy.color;
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Check for collisions with projectiles
+    projectiles.forEach((proj, projIndex) => {
+      if (isColliding(proj, enemy)) {
+        score += 10;
+        enemies.splice(enemyIndex, 1);
+        projectiles.splice(projIndex, 1);
+      }
+    });
+  });
+
+  // Display score
+  ctx.font = '24px Arial';
+  ctx.fillStyle = 'white';
+  ctx.fillText(`Score: ${score}`, 10, 30);
+
+  // Spawn enemies at intervals
+  if (Math.random() < 0.02) spawnEnemy();
+
+  // Call the next frame
+  requestAnimationFrame(gameLoop);
+}
+
+// Start the game loop
+gameLoop();
+</script>
+</body>
+</html>
